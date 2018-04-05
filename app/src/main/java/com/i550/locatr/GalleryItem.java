@@ -8,6 +8,25 @@ public class GalleryItem {          //сюда расшифровывается 
     private String mId;
     private String mUrl;
     private String mOwner;
+    private double mLat;
+
+    public double getLat() {
+        return mLat;
+    }
+
+    public void setLat(double lat) {
+        mLat = lat;
+    }
+
+    public double getLon() {
+        return mLon;
+    }
+
+    public void setLon(double lon) {
+        mLon = lon;
+    }
+
+    private double mLon;
 
     public String getOwner() {return mOwner;}
 

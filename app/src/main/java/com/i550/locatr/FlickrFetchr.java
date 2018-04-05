@@ -28,7 +28,7 @@ public class FlickrFetchr {     //класс сетевых функций
                     .appendQueryParameter("api_key", API_KEY)
                     .appendQueryParameter("format", "json")                     //json возвратить
                     .appendQueryParameter("nojsoncallback", "1")                //убирает из ответа имя и скобки
-                    .appendQueryParameter("extras", "url_s")    // возвр URL для уменьшенной картинки
+                    .appendQueryParameter("extras", "url_s, geo")    // возвр URL для уменьшенной картинки
                     .build();
 
         //    .toString();
@@ -125,6 +125,9 @@ public class FlickrFetchr {     //класс сетевых функций
             }
             item.setmUrl(photoJsonObject.getString("url_s")); //получаем url_s фотки и ложим в итем
             item.setOwner(photoJsonObject.getString("owner"));  //получаем владельца из Jsonа и ложим в итем
+            item.setLat(photoJsonObject.getDouble("latitude"));
+            item.setLon(photoJsonObject.getDouble("longitude"));
+
             items.add(item);            //получившийся итем ложим в список
         }
     }

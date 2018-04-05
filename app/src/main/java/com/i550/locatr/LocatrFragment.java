@@ -10,7 +10,6 @@ import android.os.Bundle;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -25,25 +24,48 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 
 import java.io.IOException;
 import java.util.List;
 
-public class LocatrFragment extends Fragment {
-    private ImageView mImageView;
+public class LocatrFragment extends SupportMapFragment {
+    //  private ImageView mImageView;                     //удаляем старый интерфейс и строим карту, SupportMapFragment вместо ImageView
     private GoogleApiClient mClient;
     private static final String TAG = "LocatrFragment";
     private static final int REQUEST_LOC_PERMS = 0;
     private static final String[] LOC_PERMS = new String[]{
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,};       //разрешения которые надо запрашивать
-    //предоставляются на уровне групп
+            Manifest.permission.ACCESS_COARSE_LOCATION,};       //разрешения которые надо запрашивать = предоставляются на уровне групп
+    private Bitmap mMapImage;
+    private GalleryItem mMapItem;
+    private Location mCurrentLocation;
+    private GoogleMap mMap;
 
-    private boolean hasLocationPermission(){        //проверка разрешений
-        int result = ContextCompat.checkSelfPermission(getActivity(),LOC_PERMS[0]);     //проверяем разрешение у 1го элемента
+
+    private boolean hasLocationPermission() {        //проверка разрешений
+        int result = ContextCompat.checkSelfPermission(getActivity(), LOC_PERMS[0]);     //проверяем разрешение у 1го элемента
         return result == PackageManager.PERMISSION_GRANTED;                             //если разрешено то группа разрешена
     }
 
+    private void updateUI() {
+        if (mMap == null || mMapImage == null) return;
+    LatLng itemPoint = new LatLng(mMapItem.getLat(), mMapItem.getLon());
+    LatLng myPoint = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+    LatLngBounds bounds = new LatLngBounds.Builder()        //создаем участок
+            .include(itemPoint)
+            .include(myPoint)
+            .build();
+    int margin = getResources().getDimensionPixelSize(R.dimen.map_inset_margin);
+    CameraUpdate update = CameraUpdateFactory.newLatLngBounds(bounds, margin);      //создаем объект камераАпдейт
+    mMap.animateCamera(update);             //анимированно наводим на участок
+    }
 
     public static LocatrFragment newInstance(){
         return new LocatrFragment();
@@ -66,13 +88,21 @@ public class LocatrFragment extends Fragment {
                     public void onConnectionSuspended(int i) {}
                 })
                 .build();
+        getMapAsync(new OnMapReadyCallback() {              //получение объекта GoogleMap
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                mMap=googleMap;
+                updateUI();
+            }
+        });
     }
 
-    @Nullable @Override
+/*    @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_locatr,container,false);
         return v;
-    }
+    }*/
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
@@ -133,14 +163,19 @@ public class LocatrFragment extends Fragment {
         });
     }
 
+//___________________________________________________________________________________
+
+
     private class SearchTask extends AsyncTask<Location,Void,Void>{ //ИЩЕТ
         private GalleryItem mGalleryItem;
         private Bitmap mBitmap;
+        private Location mLocation;
 
         @Override
         protected Void doInBackground(Location... params) {
+            mLocation = params[0];
             FlickrFetchr fetchr= new FlickrFetchr();
-            List<GalleryItem> items = fetchr.searchPhotos(params[0]);
+            List<GalleryItem> items = fetchr.searchPhotos(mLocation);
             if(items.size()==0) return null;
             mGalleryItem=items.get(0);
             try{
@@ -154,7 +189,11 @@ public class LocatrFragment extends Fragment {
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            mImageView.setImageBitmap(mBitmap);
+       //     mImageView.setImageBitmap(mBitmap);
+            mMapImage = mBitmap;
+            mMapItem=mGalleryItem;
+            mCurrentLocation=mLocation;
+            updateUI();
         }
     }
 }
